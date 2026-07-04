@@ -8,6 +8,8 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("1h"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+  UPLOAD_DIR: z.string().default("uploads"),
+  PUBLIC_ORIGIN: z.string().default("http://localhost:8000"),
 });
 
 const parsed = envSchema.safeParse(process.env);
