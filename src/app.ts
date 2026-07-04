@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import { config } from "./config/env";
 import { apiRouter } from "./routes";
+import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 
 export const app = express();
 
@@ -21,3 +22,6 @@ app.use(
 );
 
 app.use("/api", apiRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
