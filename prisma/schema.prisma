@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum Status {
+  todo
+  in_progress
+  done
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  priority    Priority @default(medium)
+  dueDate     DateTime @db.Date
+  tags        String[]
+  status      Status   @default(todo)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([dueDate])
+}
+
+model ImageAsset {
+  id        String   @id @default(uuid())
+  filename  String
+  url       String
+  name      String
+  width     Int
+  height    Int
+  createdAt DateTime @default(now())
+
+  shapes Shape[]
+}
+
+model Shape {
+  id      String     @id @default(uuid())
+  imageId String
+  image   ImageAsset @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  points  Json
+  label   String?
+
+  @@index([imageId])
+}
