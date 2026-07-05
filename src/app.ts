@@ -19,3 +19,10 @@ app.use("/api", apiRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Vercel's build has, in practice, invoked this module directly as the
+// serverless function entry (rather than api/index.ts's re-export), and
+// its launcher requires the invoked module's *default* export to be a
+// function/server - so export one here too as a defensive fallback,
+// regardless of which file actually ends up being the real entry point.
+export default app;
