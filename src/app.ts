@@ -15,12 +15,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use(
-  "/uploads",
-  cors({ origin: config.CORS_ORIGIN }),
-  express.static(config.UPLOAD_DIR)
-);
-
 app.use("/api", apiRouter);
 
 app.use(notFoundHandler);

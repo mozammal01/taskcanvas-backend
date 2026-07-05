@@ -9,10 +9,11 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("1h"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
-  UPLOAD_DIR: z.string().default("uploads"),
-  PUBLIC_ORIGIN: z.string().min(1, "PUBLIC_ORIGIN is required"),
   DEMO_USER_EMAIL: z.string().email().default("demo@taskcanvas.dev"),
   DEMO_USER_PASSWORD: z.string().min(1).default("Demo1234!"),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
+  CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
+  CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY_API_SECRET is required"),
 });
 
 const parsed = envSchema.safeParse(process.env);
