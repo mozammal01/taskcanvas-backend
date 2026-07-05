@@ -19,8 +19,14 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("Invalid environment configuration:", parsed.error.flatten().fieldErrors);
-  process.exit(1);
+  // Don't call process.exit() here: in a serverless runtime (Vercel/Lambda)
+  // that tears down the whole execution environment before stderr is
+  // flushed, so the real reason never makes it into the function logs -
+  // it just shows up as an opaque "FUNCTION_INVOCATION_FAILED" crash.
+  // Throwing surfaces the actual field errors in the logs instead.
+  throw new Error(
+    `Invalid environment configuration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`
+  );
 }
 
 export const config = parsed.data;
