@@ -100,6 +100,7 @@ PATCH  /api/tasks/:id/
 DELETE /api/tasks/:id/
 GET    /api/annotate/images/
 POST   /api/annotate/images/          (multipart/form-data, field "file")
+DELETE /api/annotate/images/:id/
 GET    /api/annotate/shapes/?image=:imageId
 PUT    /api/annotate/images/:imageId/shapes/
 ```
@@ -119,6 +120,10 @@ Uploaded images are hosted on Cloudinary; `ImageAsset.url` is Cloudinary's own C
 **Prisma major-version churn.** Prisma 7 (current at the time of writing) removed the classic `url = env("DATABASE_URL")` datasource pattern in favor of a `prisma.config.ts` + driver-adapter setup. To keep the setup simple and avoid an extra `@prisma/adapter-pg` dependency for a project this size, the project pins to the last stable Prisma 6.x release, which still supports the schema-file connection string directly. Separately, Vercel's serverless runtime needs a `rhel-openssl-3.0.x` Prisma engine binary alongside the locally-generated `native` one — without adding it to `binaryTargets`, the deployed function throws a "can't find query engine" error at runtime instead of build time.
 
 **Auth/401 contract with the frontend.** The frontend's axios interceptor force-logs-out the user on *any* `401` and has no refresh-token retry logic. That meant the auth middleware had to be strict about only ever returning `401` (never `403`) for missing, malformed, or expired tokens — a `403` would have looked like a hang to the user instead of a clean logout.
+
+**A silently-dropped field the frontend depended on.** The frontend added a draft/reviewed status per shape, sent as `status` on every `PUT .../shapes/`. The `shapeSchema` zod validator only defined `{ id, imageId, points, label }`, and zod strips unknown keys by default, so `status` was silently discarded on every save with no error - and the frontend's autosave (which trusts the server's response as the new source of truth) would overwrite the local "reviewed" state back to nothing within about a second of setting it. Not a crash, not a validation error, just quietly wrong. Found by testing the full round trip against the real database instead of only the request/response shape in isolation. Fixed by adding a `ShapeStatus` enum + `status` column (migration `20260710175901_add_shape_status`) and including it in both the validator and the serializer.
+
+**A drag library eating every click.** Unrelated to this backend, but worth noting since it was found while verifying the fix above end-to-end: the frontend's `TaskCard` used dnd-kit's `useDraggable` with no activation constraint, which intercepted every plain click before it ever reached the card's `onClick` - the task-edit modal was unreachable by clicking a card, full stop. Never caught earlier because every prior test exercised drag-and-drop or the "add task" button, never a plain click on an existing card. Fixed on the frontend with an 8px pointer-movement activation constraint so a stationary click and a real drag are distinguishable.
 
 ## Project structure
 

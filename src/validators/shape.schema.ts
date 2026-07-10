@@ -10,6 +10,7 @@ export const shapeSchema = z.object({
   imageId: z.string(),
   points: z.array(pointSchema),
   label: z.string().optional(),
+  status: z.enum(["draft", "reviewed"]).optional(),
 });
 
 export const replaceShapesSchema = z.object({

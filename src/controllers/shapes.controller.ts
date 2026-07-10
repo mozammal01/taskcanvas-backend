@@ -10,6 +10,7 @@ function serializeShape(shape: ShapeRow) {
     imageId: shape.imageId,
     points: shape.points,
     label: shape.label ?? undefined,
+    status: shape.status,
   };
 }
 
@@ -40,6 +41,7 @@ export async function replaceShapes(req: Request, res: Response, next: NextFunct
           imageId,
           points: shape.points,
           label: shape.label,
+          status: shape.status ?? "draft",
         })),
       }),
     ]);

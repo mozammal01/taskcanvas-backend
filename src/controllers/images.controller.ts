@@ -38,3 +38,14 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
     next(error);
   }
 }
+
+export async function deleteImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Shape.imageId has onDelete: Cascade, so this also removes every shape
+    // drawn on the image.
+    await prisma.imageAsset.delete({ where: { id: req.params.id as string } });
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}

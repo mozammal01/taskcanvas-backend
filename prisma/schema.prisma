@@ -29,6 +29,11 @@ enum Status {
   done
 }
 
+enum ShapeStatus {
+  draft
+  reviewed
+}
+
 model Task {
   id          String   @id @default(uuid())
   title       String
@@ -56,11 +61,12 @@ model ImageAsset {
 }
 
 model Shape {
-  id      String     @id @default(uuid())
+  id      String      @id @default(uuid())
   imageId String
-  image   ImageAsset @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  image   ImageAsset  @relation(fields: [imageId], references: [id], onDelete: Cascade)
   points  Json
   label   String?
+  status  ShapeStatus @default(draft)
 
   @@index([imageId])
 }
