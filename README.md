@@ -11,6 +11,11 @@ Express + TypeScript + PostgreSQL API for [TaskCanvas](https://github.com/mozamm
 - **Validation**: zod on every request body/query
 - **Package manager**: pnpm
 
+## Live deployment
+
+- Backend: https://taskcanvas-backend.vercel.app
+- Frontend: https://taskcanvas-frontend.vercel.app
+
 ## Demo credentials
 
 ```
