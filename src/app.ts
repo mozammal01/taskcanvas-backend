@@ -5,9 +5,22 @@ import { config } from "./config/env";
 import { apiRouter } from "./routes";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 
+import { authRouter } from "./routes/auth.routes";
+import { signUp, login } from "./controllers/auth.controller";
+
 export const app = express();
 
-app.use(cors({ origin: config.CORS_ORIGIN }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+      // Allow localhost, 127.0.0.1, or specified CORS_ORIGIN
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -15,7 +28,13 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use(express.static("public"));
+
 app.use("/api", apiRouter);
+app.use("/auth", authRouter);
+app.post("/signup", signUp);
+app.post("/register", signUp);
+app.post("/login", login);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
