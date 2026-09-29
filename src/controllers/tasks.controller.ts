@@ -3,9 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { taskDraftSchema, taskPatchSchema, listTasksQuerySchema } from "../validators/task.schema";
 
-type TaskRow = Awaited<ReturnType<typeof prisma.task.findFirstOrThrow>>;
-
-function serializeTask(task: TaskRow) {
+function serializeTask(task: any) {
   return {
     id: task.id,
     title: task.title,
@@ -14,6 +12,19 @@ function serializeTask(task: TaskRow) {
     dueDate: task.dueDate.toISOString().slice(0, 10),
     tags: task.tags,
     status: task.status,
+    assignedTo: task.assignedTo ?? undefined,
+    subtasks: task.subtasks ?? [],
+    resources: task.resources ?? [],
+    userId: task.userId,
+    createdBy: task.user
+      ? {
+          id: task.user.id,
+          name: task.user.name,
+          email: task.user.email,
+        }
+      : undefined,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
   };
 }
 
@@ -23,11 +34,24 @@ function parseDueDate(dueDate: string): Date {
 
 export async function listTasks(req: Request, res: Response, next: NextFunction) {
   try {
-    const { due_date } = listTasksQuerySchema.parse(req.query);
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { due_date, all } = listTasksQuerySchema.parse(req.query);
+
+    const whereClause: Prisma.TaskWhereInput = {
+      userId,
+      ...(due_date && all !== "true" ? { dueDate: parseDueDate(due_date) } : {}),
+    };
 
     const tasks = await prisma.task.findMany({
-      where: due_date ? { dueDate: parseDueDate(due_date) } : undefined,
-      orderBy: { createdAt: "asc" },
+      where: whereClause,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
     });
 
     res.json(tasks.map(serializeTask));
@@ -38,10 +62,29 @@ export async function listTasks(req: Request, res: Response, next: NextFunction)
 
 export async function createTask(req: Request, res: Response, next: NextFunction) {
   try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const input = taskDraftSchema.parse(req.body);
 
     const task = await prisma.task.create({
-      data: { ...input, dueDate: parseDueDate(input.dueDate) },
+      data: {
+        title: input.title,
+        description: input.description,
+        priority: input.priority,
+        dueDate: parseDueDate(input.dueDate),
+        tags: input.tags,
+        status: input.status,
+        assignedTo: input.assignedTo,
+        subtasks: input.subtasks,
+        resources: input.resources,
+        userId,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
 
     res.status(201).json(serializeTask(task));
@@ -52,12 +95,34 @@ export async function createTask(req: Request, res: Response, next: NextFunction
 
 export async function patchTask(req: Request, res: Response, next: NextFunction) {
   try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const taskId = req.params.id as string;
+    const existing = await prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
     const input = taskPatchSchema.parse(req.body);
-    const { dueDate, ...rest } = input;
+    const { dueDate, subtasks, resources, ...rest } = input;
 
     const task = await prisma.task.update({
-      where: { id: req.params.id as string },
-      data: { ...rest, ...(dueDate ? { dueDate: parseDueDate(dueDate) } : {}) },
+      where: { id: taskId },
+      data: {
+        ...rest,
+        ...(dueDate ? { dueDate: parseDueDate(dueDate) } : {}),
+        ...(subtasks !== undefined ? { subtasks: subtasks as any } : {}),
+        ...(resources !== undefined ? { resources: resources as any } : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
 
     res.json(serializeTask(task));
@@ -71,7 +136,21 @@ export async function patchTask(req: Request, res: Response, next: NextFunction)
 
 export async function deleteTask(req: Request, res: Response, next: NextFunction) {
   try {
-    await prisma.task.delete({ where: { id: req.params.id as string } });
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const taskId = req.params.id as string;
+    const existing = await prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    await prisma.task.delete({ where: { id: taskId } });
     res.status(204).send();
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {

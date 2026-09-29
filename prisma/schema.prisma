@@ -15,6 +15,7 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  tasks        Task[]
 }
 
 enum Priority {
@@ -42,9 +43,15 @@ model Task {
   dueDate     DateTime @db.Date
   tags        String[]
   status      Status   @default(todo)
+  subtasks    Json?
+  resources   Json?
+  assignedTo  String?
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([userId, dueDate])
   @@index([dueDate])
 }
 
