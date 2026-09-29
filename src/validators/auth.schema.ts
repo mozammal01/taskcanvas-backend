@@ -17,6 +17,3 @@ export const registerSchema = signUpSchema;
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
-
-
-
